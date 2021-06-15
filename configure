@@ -1,0 +1,142 @@
+#! /bin/sh
+#
+# Configuration script for a Yorick plugin.
+#
+#------------------------------------------------------------------------------
+#
+# This file is licensed under the MIT "Expat" License.
+#
+# Copyright (C) 2015-2018, Éric Thiébaut <https://github.com/emmt/YPlugin>
+#
+#------------------------------------------------------------------------------
+
+# The following default values are specific to the package.  They can be
+# overwritten by options on the command line.
+cfg_cc=clang
+cfg_cppflags=
+cfg_cflags=
+cfg_copt="-O3 -mavx2 -mfma -ffast-math"; # instead of $(COPT_DEFAULT)
+cfg_deplibs=
+cfg_ldflags=
+
+# The other values are pretty general.
+cfg_yorick=yorick
+cfg_tmpdir=.
+cfg_tmpfile="$cfg_tmpdir/cfg-$$"
+cfg_debug=no
+cfg_logfile=config.log
+
+cfg_on_exit () {
+    if test "$cfg_debug" = "no"; then
+        rm -f "$cfg_tmpfile" "$cfg_tmpfile.i"
+    fi
+}
+
+trap cfg_on_exit 0
+
+cfg_progname=$0
+cfg_srcdir=$(dirname "$0")
+
+cfg_die () { echo >&2 "$cfg_progname: $*"; exit 1; }
+
+cfg_opt_value () { echo "$*" | sed 's/^[^=]*=//'; }
+
+cfg_help () {
+    cat <<EOF
+Usage: $cfg_progname [ARGS...]
+
+Arguments:
+  yorick=PATH        Path to Yorick executable [$cfg_yorick].
+  deplibs=DEPLIBS    Flags for dependencies [$cfg_deplibs],
+                     for example:
+                         deplibs='-Lsomedir -lsomelib'
+  debug              Turn debug mode on (for this script).
+  -h, --help, help   Print this help and exit.
+  cc=...             C compiler [$cfg_cc].
+  cppflags=...       Additional preprocessor flags [$cfg_cppflags],
+                     for example:
+                         CPPFLAGS='-isomedir'
+  copt=...           C code optimization flags [$cfg_copt],
+                     for example:
+                         CFLAGS='-Wall'
+  cflags=...         Additional C compiler flags [$cfg_cflags],
+                     for example:
+                         CFLAGS='-Wall'
+  ldflags=...        Additional linker flags [$cfg_ldflags].
+EOF
+}
+
+while test $# -ge 1; do
+    cfg_arg=$1
+    shift
+    case "$cfg_arg" in
+        -h | --help | help )
+            cfg_help
+            exit 0
+            ;;
+        debug )
+            cfg_debug=yes
+            ;;
+        yorick=* )
+            cfg_yorick=$(cfg_opt_value "$cfg_arg")
+            ;;
+        deplibs=* )
+            cfg_deplibs=$(cfg_opt_value "$cfg_arg")
+            ;;
+        cc=* )
+            cfg_cc=$(cfg_opt_value "$cfg_arg")
+            ;;
+        cppflags=* )
+            cfg_cppflags=$(cfg_opt_value "$cfg_arg")
+            ;;
+        cflags=* )
+            cfg_cflags=$(cfg_opt_value "$cfg_arg")
+            ;;
+        copt=* )
+            cfg_copt=$(cfg_opt_value "$cfg_arg")
+            ;;
+        ldflags=* )
+            cfg_ldflags=$(cfg_opt_value "$cfg_arg")
+            ;;
+        * )
+            cfg_die "Unknown option \"$cfg_arg\""
+    esac
+done
+
+# Get the Y_HOME and Y_SITE variables and the path to Yorick executable.
+cat >"$cfg_tmpfile.i" <<EOF
+write, format="Y_HOME=%s\nY_SITE=%s\nY_EXE=%s\n",
+  Y_HOME, Y_SITE, get_argv()(1);
+quit;
+EOF
+"$cfg_yorick" -batch "$cfg_tmpfile.i" >"$cfg_tmpfile" 2>>"$cfg_logfile"
+
+cfg_yhome=$(sed < "$cfg_tmpfile" -e '/^Y_HOME=/!d;s/^Y_HOME=//')
+cfg_ysite=$(sed < "$cfg_tmpfile" -e '/^Y_SITE=/!d;s/^Y_SITE=//')
+cfg_yexe=$(sed < "$cfg_tmpfile" -e '/^Y_EXE=/!d;s/^Y_EXE=//')
+
+echo >&2 "Yorick executable --------> $cfg_yorick"
+echo >&2 "Yorick home directory ----> $cfg_yhome"
+echo >&2 "Yorick site directory ----> $cfg_ysite"
+
+# Create the Makefile.
+sed <"${cfg_srcdir}"/Makefile.in >Makefile.tmp \
+    -e "s|@srcdir@|$cfg_srcdir|g" \
+    -e "s|@YORICK_EXE@|$cfg_yexe|g" \
+    -e "s|@YORICK_MAKEDIR@|$cfg_yhome|g" \
+    -e "s|@YORICK_HOME@|$cfg_yhome|g" \
+    -e "s|@YORICK_SITE@|$cfg_ysite|g" \
+    -e "s|@PKG_CC@|$cfg_cc|g" \
+    -e "s|@PKG_CFLAGS@|$cfg_cflags|g" \
+    -e "s|@COPT@|$cfg_copt|g" \
+    -e "s|@PKG_LDFLAGS@|$cfg_ldflags|g" \
+    -e "s|@PKG_DEPLIBS@|$cfg_deplibs|g"
+if cmp -s Makefile.tmp Makefile 2>/dev/null; then
+    echo "Makefile has not changed."
+    rm -f Makefile.tmp
+else
+    rm -f Makefile
+    mv Makefile.tmp Makefile
+    echo "Makefile has been created."
+fi
+echo "You can run 'make' and 'make install' now."

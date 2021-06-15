@@ -1,0 +1,117 @@
+# where are the sources? (automatically filled in by configure script)
+srcdir = @srcdir@
+
+# these values filled in by "yorick -batch make.i" or configure script
+Y_MAKEDIR = @YORICK_MAKEDIR@
+Y_EXE = @YORICK_EXE@
+Y_EXE_PKGS =
+Y_EXE_HOME = @YORICK_HOME@
+Y_EXE_SITE = @YORICK_SITE@
+Y_HOME_PKG =
+
+# ----------------------------------------------------- optimization flags
+
+# options for make command line, e.g.-   make COPT=-g TGT=exe
+COPT = @COPT@
+TGT=$(DEFAULT_TGT)
+
+# ------------------------------------------------ macros for this package
+
+PKG_NAME=yor_vops
+PKG_I=$(srcdir)/vops.i
+
+OBJS = yor_vops.o
+
+# change to give the executable a name other than yorick
+PKG_EXENAME = yorick
+
+# PKG_DEPLIBS=-Lsomedir -lsomelib   for dependencies of this package
+PKG_DEPLIBS = @PKG_DEPLIBS@
+
+# C compiler, compiler (or rarely loader) flags specific to this package
+PKG_CC = @PKG_CC@
+PKG_CFLAGS = -I$(srcdir) @PKG_CFLAGS@
+PKG_LDFLAGS = @PKG_LDFLAGS@
+
+# list of additional package names you want in PKG_EXENAME
+# (typically $(Y_EXE_PKGS) should be first here)
+EXTRA_PKGS=$(Y_EXE_PKGS)
+
+# list of additional files for clean
+PKG_CLEAN=config.log
+
+# autoload file for this package, if any
+PKG_I_START = $(srcdir)/vops-start.i
+# non-pkg.i include files for this package, if any
+PKG_I_EXTRA = \
+    $(srcdir)/vops-tests.i
+
+RELEASE_FILES = \
+    LICENSE.md \
+    Makefile.in \
+    README.md \
+    configure \
+    vops-start.i \
+    vops-tests.i \
+    vops.i \
+    yor_vops.c
+
+RELEASE_NAME = $(PKG_NAME)-$(RELEASE_VERSION).tar.bz2
+
+# -------------------------------- standard targets and rules (in Makepkg)
+
+# set macros Makepkg uses in target and dependency names
+# DLL_TARGETS, LIB_TARGETS, EXE_TARGETS
+# are any additional targets (defined below) prerequisite to
+# the plugin library, archive library, and executable, respectively
+PKG_I_DEPS=$(PKG_I)
+Y_DISTMAKE=distmake
+
+include $(Y_MAKEDIR)/Make.cfg
+include $(Y_MAKEDIR)/Makepkg
+include $(Y_MAKEDIR)/Make$(TGT)
+
+# override macros Makepkg sets for rules and other macros
+# see comments in Y_HOME/Makepkg for a list of possibilities
+
+# if this package built with mpy: 1. be sure mpy appears in EXTRA_PKGS,
+# 2. set TGT=exe, and 3. uncomment following two lines
+# Y_MAIN_O=$(Y_LIBEXE)/mpymain.o
+# include $(Y_MAKEDIR)/Makempy
+
+# configure script for this package may produce make macros:
+# include output-makefile-from-package-configure
+
+# reduce chance of yorick-1.5 corrupting this Makefile
+MAKE_TEMPLATE = protect-against-1.5
+
+# ------------------------------------- targets and rules for this package
+
+# Redefine LD_DLL to use the C linker:
+LD_DLL=$(PKG_CC) $(LDFLAGS) $(PLUG_SHARED)
+
+# Dummy default target in case Y_MAKEDIR was not defined:
+dummy-default:
+	@echo >&2 "*** ERROR: Y_MAKEDIR not defined, aborting..."; false
+
+print-config:
+	@echo "PKG_CFLAGS --> $(PKG_CFLAGS)"
+	@echo "PKG_LFLAGS --> $(PKG_LDFLAGS)"
+	@echo "PKG_DEPLIBS -> $(PKG_DEPLIBS)"
+	@echo "PKG_CC ------> $(PKG_CC)"
+	@echo "CPPFLAGS ----> $(CPPFLAGS)"
+	@echo "CFLAGS ------> $(CFLAGS)"
+	@echo "COPT --------> $(COPT)"
+	@echo "LDFLAGS -----> $(LDFLAGS)"
+	@echo "LD_DLL ------> $(LD_DLL)"
+
+%.o: $(srcdir)/%.c
+	$(PKG_CC) $(CPPFLAGS) $(CFLAGS) -o $@ -c $<
+
+# simple example:
+#myfunc.o: myapi.h
+# more complex example (also consider using PKG_CFLAGS above):
+#myfunc.o: myapi.h myfunc.c
+#	$(CC) $(CPPFLAGS) $(CFLAGS) -DMY_SWITCH -o $@ -c myfunc.c
+
+# -------------------------------------------------------- end of Makefile
