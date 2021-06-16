@@ -16,35 +16,48 @@ if (is_func(plug_in)) plug_in, "yor_vops";
 local vops;
 /* DOCUMENT Vectorized operations for Yorick
 
-   Plug-in "vops.i" provides a number of optimized functions to perform basic
-   linear algebra operations on arrays (as if they are vectors).  Available
-   functions and subroutines are:
+     Plug-in "vops.i" provides a number of optimized functions to perform basic
+     linear algebra operations on arrays (as if they are vectors).  Available
+     functions and subroutines are:
 
-   - `vops_norm1(x)` yields the L1-norm of the real-valued array `x`, defined
-     as `sum(abs(x))`.
+         vops_norm1(x)                          -->  sum(abs(x))
 
-   - `vops_norm2(x)` yields the L2-norm (Euclidean norm) of the real-valued
-     array `x`, defined as `sqrt(sum(x*x))`.
+     yields the L1-norm of the real-valued array `x`;
 
-   - `vops_norminf(x)` yields the infinite-norm of the real-valued array `x`,
-     defined as `max(abs(x))`.
+         vops_norm2(x)                          -->  sqrt(sum(x*x))
 
-   - `vops_inner(x,y)` yields the inner product of the real-valued arrays `x`,
-     and `y`, defined as `sum(x*y)`.
+     yields the L2-norm (Euclidean norm) of the real-valued array `x`;
 
-   - `vops_inner(w,x,y)` yields the "triple" inner product of the real-valued
-     arrays `w`, `x`, and `y`, defined as `sum(w*x*y)`.
+         vops_norminf(x)                        -->  max(abs(x))
 
-   - `vops_scale(alpha,x)` or `vops_scale(x,alpha)` yields the real-valued
-     array `x` scaled by the factor `alpha`.  If `alpha = 0`, the result is
-     filled by zeros whatever the values in `x` (hence `x` may contain NaN's in
-     that case).
+     yields the infinite-norm of the real-valued array `x`;
 
-   - `vops_scale, x, alpha;` scales the real-valued array `x` scaled by the
-     factor `alpha` in-place (i.e., overwriting the contents of `x`).
+         vops_inner(x,y)                        -->  sum(x*y)
+         vops_inner(w,x,y)                      -->  sum(w*x*y)
 
-   - `vops_update, y, alpha, x;` computes `y += alpha*x` for arrays `x` and `y`
-     and scalar factor `alpha` efficiently, overwriting the contents `y`.
+     yields the inner product or "triple" innner product of the real-valued
+     arrays `w`, `x`, and `y`;
+
+         vops_scale(alpha, x)                   -->  alpha*x
+         vops_scale(x, alpha)                   -->  alpha*x
+         vops_scale, x, alpha;                  -->  x *= alpha
+
+     yields the real-valued array `x` scaled by the factor `alpha` (if `alpha`
+     is zero, the result is filled by zeros whatever the values in `x`, hence
+     `x` may contain NaN's in that case); if called as a subroutines,
+     `vops_scale` overwrites the contents of `x`;
+
+         vops_update, y, alpha, x;              -->  y += alpha*x
+
+     computes `y += alpha*x` for arrays `x` and `y` and scalar factor `alpha`,
+     overwriting the contents `y`;
+
+         vops_combine(alpha, x, beta, y)        -->  alpha*x + beta*y
+         vops_combine, dst, alpha, x, beta, y;  -->  dst = alpha*x + beta*y
+
+     computes `alpha*x + beta*y` efficiently for arrays `x` and `y` and scalar
+     factors `alpha` and `beta` efficiently; if called with 5 arguments,
+     `vops_combine` automatically redefine or re-use the contents of `dst`.
 
 
    SEE ALSO: vops_norm1, vops_norm2, vops_norminf, vops_inner, vops_scale,
@@ -107,20 +120,39 @@ extern vops_scale;
       If `alpha = 0`, the result is filled by zeros whatever the values in `x`
       (hence `x` may contain NaN's in that case).
 
-   SEE ALSO: vops, vops_update.
+   SEE ALSO: vops, vops_combine, vops_update.
  */
 
 extern vops_update;
 /* DOCUMENT vops_update, y, alpha, x;
 
-      Compute `y += alpha*x` for arrays `x` and `y` and scalar factor `alpha`
-      efficiently, overwriting the contents of `y`.  Arrays `x` and `y` must
+      Compute `y += alpha*x` efficiently for arrays `x` and `y` and scalar
+      factor `alpha`, overwriting the contents of `y`.  Arrays `x` and `y` must
       have the same dimensions.  The result is always of floating-point type
-      (`float` if both `x` and `y` are of type `float`, `double` otherwise`).
-      If `y` must be promoted to the result type, it must not be an expression.
-      The result `y` is returned if called as a function.
+      (`float` if both `x` and `y` are of type `float`, `double` otherwise).
+      If `y` must be promoted to the result type, it must not be an expression
+      (i.e., `y` must be a simple variable for the caller).  The result `y` is
+      returned if called as a function.
 
-   SEE ALSO: vops, vops_scale.
+   SEE ALSO: vops, vops_combine, vops_scale.
+ */
+
+extern vops_combine;
+/* DOCUMENT vops_combine, dst, alpha, x, beta, y;
+         or dst = vops_combine(alpha, x, beta, y);
+
+      Compute `dst = alpha*x + beta*y` efficiently for arrays `x` and `y` and
+      scalar factors `alpha` and `beta`.  Arrays `x` and `y` must have the same
+      dimensions.  The result `dst` is always of floating-point type (`float`
+      if both `x` and `y` are of type `float`, `double` otherwise).
+
+      When called with 5 arguments, `dst` is overwritten by the result.  If the
+      contents of `dst` has the correct dimensions and type, the memory
+      allocated for `dst` is re-used; otherwise, `dst` is automatically
+      re-allocated but must not be an expression (i.e., `dst` must be a simple
+      variable for the caller).
+
+   SEE ALSO: vops, vops_scale, vops_update.
  */
 
 local vops_tic, vops_toc, vops_flops, vops_time;

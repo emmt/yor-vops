@@ -1,4 +1,5 @@
 autoload, "vops.i",
+    vops_combine,
     vops_flops,
     vops_inner,
     vops_norm1,

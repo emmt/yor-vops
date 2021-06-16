@@ -6,59 +6,95 @@ optimized functions to perform basic linear algebra operations on arrays (as if
 they are vectors).  These functions can serve as fast building blocks for more
 advanced algorithms (e.g., the linear conjugate gradient method).
 
-Available functions and subroutines are:
 
-- `vops_norm1(x)` yields the L1-norm of the real-valued array `x`, defined as
-  `sum(abs(x))`.
+Usage
+-----
 
-- `vops_norm2(x)` yields the L2-norm (Euclidean norm) of the real-valued array
-  `x`, defined as `sqrt(sum(x*x))`.
+Functions and subroutines provided by `VOPS` are:
 
-- `vops_norminf(x)` yields the infinite-norm of the real-valued array
-  `x`, defined as `max(abs(x))`.
+    vops_norm1(x)                          -->  sum(abs(x))
 
-- `vops_inner(x,y)` yields the inner product of the real-valued arrays `x`, and `y`,
-  defined as `sum(x*y)`.
+yields the L1-norm of the real-valued array `x`;
 
-- `vops_inner(w,x,y)` yields the "triple" inner product of the real-valued
-  arrays `w`, `x`, and `y`, defined as `sum(w*x*y)`.
+    vops_norm2(x)                          -->  sqrt(sum(x*x))
 
-- `vops_scale(alpha,x)` or `vops_scale(x,alpha)` yields the real-valued array
-  `x` scaled by the factor `alpha`.  If `alpha = 0`, the result is filled by
-  zeros whatever the values in `x` (hence `x` may contain NaN's in that case).
+yields the L2-norm (Euclidean norm) of the real-valued array `x`;
 
-- `vops_scale, x, alpha;` scales the real-valued array `x` scaled by the factor
-  `alpha` in-place (i.e., overwriting the contents of `x`).
+    vops_norminf(x)                        -->  max(abs(x))
 
-- `vops_update, y, alpha, x;` computes `y += alpha*x` for arrays `x` and `y`
-  and scalar factor `alpha` efficiently, overwriting the contents `y`.
+yields the infinite-norm of the real-valued array `x`;
+
+    vops_inner(x,y)                        -->  sum(x*y)
+    vops_inner(w,x,y)                      -->  sum(w*x*y)
+
+yields the inner product or "triple" innner product of the real-valued arrays
+`w`, `x`, and `y`;
+
+    vops_scale(alpha, x)                   -->  alpha*x
+    vops_scale(x, alpha)                   -->  alpha*x
+    vops_scale, x, alpha;                  -->  x *= alpha
+
+yields the real-valued array `x` scaled by the factor `alpha` (if `alpha` is
+zero, the result is filled by zeros whatever the values in `x`, hence `x` may
+contain NaN's in that case); if called as a subroutines, `vops_scale`
+overwrites the contents of `x`;
+
+    vops_update, y, alpha, x;              -->  y += alpha*x
+
+computes `y += alpha*x` for arrays `x` and `y` and scalar factor `alpha`,
+overwriting the contents `y`;
+
+    vops_combine(alpha, x, beta, y)        -->  alpha*x + beta*y
+    vops_combine, dst, alpha, x, beta, y;  -->  dst = alpha*x + beta*y
+
+computes `alpha*x + beta*y` efficiently for arrays `x` and `y` and scalar
+factors `alpha` and `beta` efficiently; if called with 5 arguments,
+`vops_combine` automatically redefine or re-use the contents of `dst`.
+
+
+Benefits
+--------
+
+One of the benefits of using `VOPS` is the acceleration of computations (see
+[Performances](#performances)).  Another advantage is that single-precision
+computations can be performed if arrays are of type `float`.
+
+
+Performances
+------------
 
 The following timings have been obtained for double precision floating-point
 (`double`) variables:
 
-| Description    | Code                    |       Power | Complexity |
-|:---------------|:------------------------|------------:|-----------:|
-| L1-norm        | `sum(abs(x))`           |  1.7 Gflops |      `2⋅n` |
-|                | `vops_norm1(x)`         | 21.5 Gflops |            |
-| L2-norm        | `sqrt(sum(x*x))`        |  1.9 Gflops |      `2⋅n` |
-|                | `vops_norm2(x)`         | 24.8 Gflops |            |
-| Inf-norm       | `max(abs(x))`           |  2.7 Gflops |      `2⋅n` |
-|                | `vops_norminf(x)`       | 20.5 Gflops |            |
-| Inner product  | `sum(x*y)`              |  1.9 Gflops |      `2⋅n` |
-|                | `vops_inner(x,y)`       | 15.6 Gflops |            |
-| Triple product | `sum(w*x*y)`            |  2.1 Gflops |      `3⋅n` |
-|                | `vops_inner(x,x,y)`     | 16.0 Gflops |            |
-| Scale          | `x *= alpha`            |  1.6 Gflops |        `n` |
-|                | `vops_scale,x,alpha`    |  3.4 Gflops |            |
-| Update         | `y += alpha*x`          |  2.1 Gflops |      `2⋅n` |
-|                | `vops_update,y,alpha,x` | 10.6 Gflops |            |
+| Description    | Code                               |       Power | Complexity |
+|:---------------|:-----------------------------------|------------:|-----------:|
+| L1-norm        | `sum(abs(x))`                      |  1.7 Gflops |      `2⋅n` |
+|                | `vops_norm1(x)`                    | 21.5 Gflops |            |
+| L2-norm        | `sqrt(sum(x*x))`                   |  1.9 Gflops |      `2⋅n` |
+|                | `vops_norm2(x)`                    | 24.8 Gflops |            |
+| Inf-norm       | `max(abs(x))`                      |  2.7 Gflops |      `2⋅n` |
+|                | `vops_norminf(x)`                  | 20.5 Gflops |            |
+| Inner product  | `sum(x*y)`                         |  1.9 Gflops |      `2⋅n` |
+|                | `vops_inner(x,y)`                  | 15.6 Gflops |            |
+| Triple product | `sum(w*x*y)`                       |  2.1 Gflops |      `3⋅n` |
+|                | `vops_inner(x,x,y)`                | 16.0 Gflops |            |
+| Scale          | `x *= alpha`                       |  1.6 Gflops |        `n` |
+|                | `vops_scale,x,alpha`               |  3.4 Gflops |            |
+| Update         | `y += alpha*x`                     |  2.1 Gflops |      `2⋅n` |
+|                | `vops_update,y,alpha,x`            | 10.6 Gflops |            |
+| Combine        | `z = alpha*x + beta*y`             |  1.9 Gflops |      `3⋅n` |
+|                | `z = vops_combine(alpha,x,beta,y)` |  8.4 Gflops |            |
+|                | `vops_combine,z,alpha,x,beta,y`    | 13.5 Gflops |            |
 
 The "Power" is the number of floating-point operations per second which is
 computed by dividing the CPU time by the number of floating-point operations
 (given in column "Complexity" with `n` the number of elements).  The code for
-benchmarking is in file [`vops-tests.i`](./vops-tests.i).  These results have
-been obtained on an AMD Ryzen Threadripper 2950X 16-core processor at 4.1 GHz
-with a plug-in compiled by Clang (version 10.0) with [loop
+benchmarking is in file [`vops-tests.i`](./vops-tests.i).
+
+Speed-up may be up to a factor 13 thanks to
+[SIMD](https://en.wikipedia.org/wiki/SIMD) instructions.  These results have
+been obtained on a **single core** of an AMD Ryzen Threadripper 2950X 16-core
+processor at 4.1 GHz with a plug-in compiled by Clang (version 10.0) with [loop
 vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization).
 Compiler and optimization flags have been configured by (see
 ["Installation"](#installation)):

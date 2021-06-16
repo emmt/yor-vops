@@ -393,7 +393,7 @@ void Y_vops_scale(int argc)
     if (argc != 2) {
         y_error("usage: vops_scale(x, alpha)");
     }
-    int inplace = yarg_subroutine();
+    bool inplace = yarg_subroutine();
     int x_iarg = argc - 1;
     int a_iarg = argc - 2;
     if (!inplace && yarg_rank(a_iarg) > 0) {
@@ -405,7 +405,7 @@ void Y_vops_scale(int argc)
     array x;
     get_real_array(x_iarg, &x, inplace);
     double alpha = ygets_d(a_iarg);
-    int single = (x.type == Y_FLOAT);
+    bool single = (x.type == Y_FLOAT);
     void* dst;
     if (inplace) {
         dst = x.data;
@@ -476,7 +476,7 @@ void Y_vops_update(int argc)
     if (T < 0) {
         y_error("arguments have `x` and `y` incompatible types");
     }
-    int single = (T == Y_FLOAT);
+    bool single = (T == Y_FLOAT);
     if (!single) {
         T = Y_DOUBLE;
     }
@@ -497,4 +497,172 @@ void Y_vops_update(int argc)
         vops_update_dbl(y.data, alpha, x.data, x.ntot);
     }
     yarg_drop(argc - 1);
+}
+
+//-----------------------------------------------------------------------------
+// VOPS_COMBINE
+
+#define ENCODE_(func, T, scale)                                 \
+    static void func(                                           \
+        T*       dst,                                           \
+        T        alpha,                                         \
+        const T* x,                                             \
+        T        beta,                                          \
+        const T* y,                                             \
+        long     n)                                             \
+    {                                                           \
+        /* May swap operands to reduce alternatives. */         \
+        if (alpha != beta &&                                    \
+            (beta == 0 ||                                       \
+             (beta == 1 && alpha != 0) ||                       \
+             (beta == -1 && alpha != 0 && alpha != 1))) {       \
+            const T* ptr = x; x = y; y = ptr;                   \
+            T val = alpha; alpha = beta; beta = val;            \
+        }                                                       \
+        if (alpha == 0) {                                       \
+            scale(dst, beta, y, n);                             \
+        } else if (alpha == 1) {                                \
+            /* beta is not 0 */                                 \
+            if (beta == 1) {                                    \
+                for (long i = 0; i < n; ++i) {                  \
+                    dst[i] = x[i] + y[i];                       \
+                }                                               \
+            } else if (beta == -1) {                            \
+                for (long i = 0; i < n; ++i) {                  \
+                    dst[i] = x[i] - y[i];                       \
+                }                                               \
+            } else {                                            \
+                for (long i = 0; i < n; ++i) {                  \
+                    dst[i] = x[i] + beta*y[i];                  \
+                }                                               \
+            }                                                   \
+        } else if (alpha == -1) {                               \
+            /* beta is neither 0, nor 1 */                      \
+            if (beta == -1) {                                   \
+                for (long i = 0; i < n; ++i) {                  \
+                    dst[i] = -x[i] - y[i];                      \
+                }                                               \
+            } else {                                            \
+                for (long i = 0; i < n; ++i) {                  \
+                    dst[i] = beta*y[i] - x[i];                  \
+                }                                               \
+            }                                                   \
+        } else {                                                \
+            /* alpha and beta are neither 0, nor ±1 */          \
+            for (long i = 0; i < n; ++i) {                      \
+                dst[i] = alpha*x[i] + beta*y[i];                \
+            }                                                   \
+        }                                                       \
+    }
+ENCODE_(vops_combine_flt, float,  vops_scale_flt);
+ENCODE_(vops_combine_dbl, double, vops_scale_dbl);
+#undef ENCODE_
+
+void Y_vops_combine(int argc)
+{
+    int d_iarg, a_iarg, x_iarg, b_iarg, y_iarg;
+    long d_index;
+    if (argc == 5) {
+        d_iarg = argc - 1;
+        a_iarg = argc - 2;
+        x_iarg = argc - 3;
+        b_iarg = argc - 4;
+        y_iarg = argc - 5;
+        d_index = yget_ref(d_iarg); // before any other operations
+    } else if (argc == 4 && !yarg_subroutine()) {
+        d_iarg = -1;
+        a_iarg = argc - 1;
+        x_iarg = argc - 2;
+        b_iarg = argc - 3;
+        y_iarg = argc - 4;
+        d_index = -1;
+    } else {
+        y_error(yarg_subroutine() ?
+                "usage: vops_combine, dst, alpha, x, beta, y;":
+                "usage: vops_combine([dst,] alpha, x, beta, y)");
+        return;
+    }
+
+    // Get input arguments.
+    double alpha = ygets_d(a_iarg);
+    array x;
+    get_array(x_iarg, &x);
+    if ((unsigned)x.type > Y_DOUBLE) {
+        y_error("argument `x` is not real-valued");
+    }
+    double beta = ygets_d(b_iarg);
+    array y;
+    get_array(y_iarg, &y);
+    if ((unsigned)y.type > Y_DOUBLE) {
+        y_error("argument `y` is not real-valued");
+    }
+    if (!same_dims(x.dims, y.dims)) {
+        y_error("arguments `x` and `y` must have the same dimensions");
+    }
+    int T = promote_type(x.type, y.type);
+    if (T < 0) {
+        y_error("arguments have `x` and `y` incompatible types");
+    }
+    bool single = (T == Y_FLOAT);
+    if (!single) {
+        T = Y_DOUBLE;
+    }
+
+    // Get/create output array.
+    int drop = 0;
+    void* dst = NULL;
+    if (d_iarg >= 0) {
+        int d_type = yarg_typeid(d_iarg);
+        if (d_type == T && yarg_rank(d_iarg) == x.dims[0]) {
+            array d;
+            get_array(d_iarg, &d);
+            if (same_dims(x.dims, d.dims)) {
+                // Re-use the destination.
+                dst = d.data;
+                drop = d_iarg;
+            }
+        }
+        if (dst == NULL) {
+            if (d_index < 0) {
+                y_error("destination must have the correct size and type "
+                        "or be a simple variable");
+            }
+            if (d_type != Y_VOID) {
+                // Free memory that may be used by the destination variable.
+                // Replace stack item by nil, then redefine variable.
+                ypush_nil();
+                yarg_swap(0, d_iarg + 1); // +1 because of push
+                yarg_drop(1);
+                yput_global(d_index, d_iarg);
+            }
+        }
+    }
+    if (dst == NULL) {
+        // Allocate output array.
+        if (single) {
+            dst = ypush_f(x.dims);
+        } else {
+            dst = ypush_d(x.dims);
+        }
+        if (d_index >= 0) {
+            yput_global(d_index, 0);
+        }
+    }
+
+    // Convert input arrays and call function.
+    if (x.type != T) {
+        coerce(x_iarg, &x, T);
+    }
+    if (y.type != T) {
+        coerce(y_iarg, &y, T);
+    }
+    if (single) {
+        vops_combine_flt(dst, alpha, x.data, beta, y.data, x.ntot);
+    } else {
+        vops_combine_dbl(dst, alpha, x.data, beta, y.data, x.ntot);
+    }
+    if (drop > 0) {
+        // Leave result on top of the stack.
+        yarg_drop(d_iarg);
+    }
 }
