@@ -1,7 +1,7 @@
 Vectorized operations for Yorick
 ================================
 
-The `VOPS` plug-in for [Yorick](http://yorick.github.com/) provides a number of
+The `vops.i` plug-in for [Yorick](http://yorick.github.com/) provides a number of
 optimized functions to perform basic linear algebra operations on arrays (as if
 they are vectors).  These functions can serve as fast building blocks for more
 advanced algorithms (e.g., the linear conjugate gradient method).
@@ -10,7 +10,7 @@ advanced algorithms (e.g., the linear conjugate gradient method).
 Usage
 -----
 
-Functions and subroutines provided by `VOPS` are:
+Functions and subroutines provided by `vops.i` are:
 
     vops_norm1(x)                          -->  sum(abs(x))
 
@@ -36,7 +36,7 @@ yields the inner product or "triple" innner product of the real-valued arrays
 
 yields the real-valued array `x` scaled by the factor `alpha` (if `alpha` is
 zero, the result is filled by zeros whatever the values in `x`, hence `x` may
-contain NaN's in that case); if called as a subroutines, `vops_scale`
+contain NaN's in that case); if called as a subroutine, `vops_scale`
 overwrites the contents of `x`;
 
     vops_update, y, alpha, x;              -->  y += alpha*x
@@ -49,15 +49,19 @@ overwriting the contents `y`;
 
 computes `alpha*x + beta*y` efficiently for arrays `x` and `y` and scalar
 factors `alpha` and `beta` efficiently; if called with 5 arguments,
-`vops_combine` automatically redefine or re-use the contents of `dst`.
+`vops_combine` automatically redefines or re-uses the contents of `dst`.
 
 
 Benefits
 --------
 
-One of the benefits of using `VOPS` is the acceleration of computations (see
-[Performances](#performances)).  Another advantage is that single-precision
-computations can be performed if arrays are of type `float`.
+One of the benefits of using `vops.i` is the acceleration of computations (see
+["Performances"](#performances)).  Note that specific values of the factors
+`alpha` and `beta` (i.e., `0`, `1` and `-1`) are handled specifically to reduce
+the numerical complexity.  Another advantage is that single-precision
+computations can be performed if all arrays are of type `float` (whatever the
+types of the factors `alpha` and `beta`).  Finally, operations involving array
+results may be performed in-place sparing allocating memory.
 
 
 Performances
@@ -92,8 +96,11 @@ computed by dividing the CPU time by the number of floating-point operations
 benchmarking is in file [`vops-tests.i`](./vops-tests.i).
 
 Speed-up may be up to a factor 13 thanks to
-[SIMD](https://en.wikipedia.org/wiki/SIMD) instructions.  These results have
-been obtained on a **single core** of an AMD Ryzen Threadripper 2950X 16-core
+[SIMD](https://en.wikipedia.org/wiki/SIMD) instructions on a **single core**.
+Note the advantage of re-using existing storage in the last example of
+`vops_combine` (arrays all have 10,000 elements in the benchmark).
+
+These results have been obtained on an AMD Ryzen Threadripper 2950X 16-core
 processor at 4.1 GHz with a plug-in compiled by Clang (version 10.0) with [loop
 vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization).
 Compiler and optimization flags have been configured by (see

@@ -44,7 +44,7 @@ local vops;
 
      yields the real-valued array `x` scaled by the factor `alpha` (if `alpha`
      is zero, the result is filled by zeros whatever the values in `x`, hence
-     `x` may contain NaN's in that case); if called as a subroutines,
+     `x` may contain NaN's in that case); if called as a subroutine,
      `vops_scale` overwrites the contents of `x`;
 
          vops_update, y, alpha, x;              -->  y += alpha*x
@@ -57,7 +57,7 @@ local vops;
 
      computes `alpha*x + beta*y` efficiently for arrays `x` and `y` and scalar
      factors `alpha` and `beta` efficiently; if called with 5 arguments,
-     `vops_combine` automatically redefine or re-use the contents of `dst`.
+     `vops_combine` automatically redefines or re-uses the contents of `dst`.
 
 
    SEE ALSO: vops_norm1, vops_norm2, vops_norminf, vops_inner, vops_scale,
@@ -115,7 +115,7 @@ extern vops_scale;
          or vops_scale, x, alpha;
 
       Scale the real-valued array `x` by the factor `alpha`.  The operation is
-      done in-place if `vops_scale` is called as a sub-routine.
+      done in-place if `vops_scale` is called as a subroutine.
 
       If `alpha = 0`, the result is filled by zeros whatever the values in `x`
       (hence `x` may contain NaN's in that case).
