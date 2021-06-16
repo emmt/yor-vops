@@ -122,3 +122,66 @@ extern vops_update;
 
    SEE ALSO: vops, vops_scale.
  */
+
+local vops_tic, vops_toc, vops_flops, vops_time;
+/* DOCUMENT vops_tic;
+         or vops_toc;
+         or vops_toc, n;
+         or vops_toc();
+         or vops_toc(n);
+         or vops_flops, nops;
+         or vops_flops(nops);
+
+     The `vops_tic` subroutine set a timer for the next call to `vops_toc`
+     which, when called as a subroutine, prints the elapsed time since previous
+     `vops_tic` or, when called as a function, returns the elapsed time (see
+     `timer` for the format and meaning of the elapsed time values).
+
+     If optional argument `n` is provided, elapsed time is divided by this
+     number.
+
+     `vops_flops` is similar to `vops_toc` except that it computes the number
+     of floating-point operations per second given `nops` the total number of
+     floating-point operations and the consumed CPU time since the last call to
+     `vops_tic`..
+
+     External variable `vops_time` may be declared local before calling
+     `vops_tic` to restrict the measurment of the elapsed time to the current
+     context.
+
+     Example:
+
+         local vops_time;
+         vops_tic;
+         .....; // some code to benchmark
+         vops_toc;
+
+
+   SEE ALSO: timer, benchmark.
+*/
+
+func vops_tic
+{
+  extern vops_time;
+  timer, (vops_time = array(double, 3));
+}
+
+func vops_toc(n)
+{
+  extern vops_time;
+  timer, (t = array(double, 3));
+  t -= vops_time;
+  if (! is_void(n)) t /= n;
+  if (! am_subroutine()) return t;
+  write, format="Elapsed time: cpu = %g s / sys = %g s / wall = %g s\n",
+    t(1), t(2), t(3);
+}
+
+func vops_flops(nops)
+{
+  extern vops_time;
+  timer, (t = array(double, 3));
+  flops = nops/(t - vops_time)(1); // CPU time
+  if (! am_subroutine()) return flops;
+  write, format="Computational power: %7.3f Gflops\n", format*1e-9;
+}

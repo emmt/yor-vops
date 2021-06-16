@@ -39,7 +39,7 @@ The following timings have been obtained for double precision floating-point
 | Description    | Code                    |       Power | Complexity |
 |:---------------|:------------------------|------------:|-----------:|
 | L1-norm        | `sum(abs(x))`           |  1.7 Gflops |      `2⋅n` |
-|                | `vops_norm1(x)`         | 20.5 Gflops |            |
+|                | `vops_norm1(x)`         | 21.5 Gflops |            |
 | L2-norm        | `sqrt(sum(x*x))`        |  1.9 Gflops |      `2⋅n` |
 |                | `vops_norm2(x)`         | 24.8 Gflops |            |
 | Inf-norm       | `max(abs(x))`           |  2.7 Gflops |      `2⋅n` |
