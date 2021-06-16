@@ -33,23 +33,39 @@ Available functions and subroutines are:
 - `vops_update, y, alpha, x;` computes `y += alpha*x` for arrays `x` and `y`
   and scalar factor `alpha` efficiently, overwriting the contents `y`.
 
-The following results have been obtained for double precision floating-point
+The following timings have been obtained for double precision floating-point
 (`double`) variables:
 
-| Description    | Code                    |       Power |
-|:---------------|:------------------------|------------:|
-| L1-norm        | `sum(abs(x))`           |  1.7 Gflops |
-|                | `vops_norm1(x)`         | 20.5 Gflops |
-| L2-norm        | `sqrt(sum(x*x))`        |  1.9 Gflops |
-|                | `vops_norm2(x)`         | 24.8 Gflops |
-| Inf-norm       | `max(abs(x))`           |  2.7 Gflops |
-|                | `vops_norminf(x)`       | 20.5 Gflops |
-| Inner product  | `sum(x*y)`              |  1.9 Gflops |
-|                | `vops_inner(x,y)`       | 15.6 Gflops |
-| Triple product | `sum(w*x*y)`            |  2.1 Gflops |
-|                | `vops_inner(x,x,y)`     | 16.0 Gflops |
-| Update         | `y += alpha*x`          |  2.1 Gflops |
-|                | `vops_update,y,alpha,x` | 10.6 Gflops |
+| Description    | Code                    |       Power | Complexity |
+|:---------------|:------------------------|------------:|-----------:|
+| L1-norm        | `sum(abs(x))`           |  1.7 Gflops |      `2⋅n` |
+|                | `vops_norm1(x)`         | 20.5 Gflops |            |
+| L2-norm        | `sqrt(sum(x*x))`        |  1.9 Gflops |      `2⋅n` |
+|                | `vops_norm2(x)`         | 24.8 Gflops |            |
+| Inf-norm       | `max(abs(x))`           |  2.7 Gflops |      `2⋅n` |
+|                | `vops_norminf(x)`       | 20.5 Gflops |            |
+| Inner product  | `sum(x*y)`              |  1.9 Gflops |      `2⋅n` |
+|                | `vops_inner(x,y)`       | 15.6 Gflops |            |
+| Triple product | `sum(w*x*y)`            |  2.1 Gflops |      `3⋅n` |
+|                | `vops_inner(x,x,y)`     | 16.0 Gflops |            |
+| Scale          | `x *= alpha`            |  1.6 Gflops |        `n` |
+|                | `vops_scale,x,alpha`    |  3.4 Gflops |            |
+| Update         | `y += alpha*x`          |  2.1 Gflops |      `2⋅n` |
+|                | `vops_update,y,alpha,x` | 10.6 Gflops |            |
+
+The "Power" is the number of floating-point operations per second which is
+computed by dividing the CPU time by the number of floating-point operations
+(given in column "Complexity" with `n` the number of elements).  The code for
+benchmarking is in file [`vops-tests.i`](./vops-tests.i).  These results have
+been obtained on an AMD Ryzen Threadripper 2950X 16-core processor at 4.1 GHz
+with a plug-in compiled by Clang (version 10.0) with [loop
+vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization).
+Compiler and optimization flags have been configured by (see
+["Installation"](#installation)):
+
+```sh
+./configure cc=clang copt='-O3 -mavx2 -mfma -ffast-math'
+```
 
 
 Installation
