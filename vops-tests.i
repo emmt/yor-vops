@@ -61,22 +61,22 @@ y = random(dims);
 warmup = [2,1000,1000];
 repeat = 100000;
 
-write, format="Test %s\n", "empty:";
+write, format="Test %s:\n", "empty";
 k = repeat; random_n, warmup; tic; while (--k >= 0) r0 = 0.0; toc, repeat;
 write, "";
 
 nops = 2*numberof(x);
-write, format="%30s: ", "sum(x*y):";
+write, format="%30s: ", "sum(x*y)";
 k = repeat; random_n, warmup; tic; while (--k >= 0) r1 = sum(x*y); flops, nops*repeat;
-write, format="%30s: ", "vops_dot(x, y):";
-k = repeat; random_n, warmup; tic; while (--k >= 0) r2 = vops_dot(x, y); flops, nops*repeat;
+write, format="%30s: ", "vops_inner(x, y)";
+k = repeat; random_n, warmup; tic; while (--k >= 0) r2 = vops_inner(x, y); flops, nops*repeat;
 write, format="Results: %g / %g\n\n", r2, r1;
 
 nops = 3*numberof(x);
 write, format="%30s: ", "sum(w*x*y)";
 k = repeat; random_n, warmup; tic; while (--k >= 0) r1 = sum(x*x*y); flops, nops*repeat;
-write, format="%30s: ", "vops_dot(w, x, y)";
-k = repeat; random_n, warmup; tic; while (--k >= 0) r2 = vops_dot(x, x, y); flops, nops*repeat;
+write, format="%30s: ", "vops_inner(w, x, y)";
+k = repeat; random_n, warmup; tic; while (--k >= 0) r2 = vops_inner(x, x, y); flops, nops*repeat;
 write, format="Results:  %g / %g\n\n", r2, r1;
 
 nops = 2*numberof(x);
@@ -107,3 +107,15 @@ k = repeat; random_n, warmup; tic; while (--k >= 0) r1 = alpha*x; flops, nops*re
 write, format="%30s: ", "vops_scale(x, alpha)";
 k = repeat; random_n, warmup; tic; while (--k >= 0) r2 = vops_scale(x, alpha); flops, nops*repeat;
 write, format="Results: max(abs(dif)) = %g\n\n", max(abs(r2 - r1));
+
+alpha = random();
+nops = 2*numberof(x);
+y1 = y;
+write, format="%30s: ", "y += alpha*x";
+k = repeat; random_n, warmup; tic; while (--k >= 0) y1 += alpha*x; flops, nops*repeat;
+y2 = y;
+write, format="%30s: ", "vops_update, y, alpha, x";
+k = repeat; random_n, warmup; tic; while (--k >= 0) vops_update, y2, alpha, x; flops, nops*repeat;
+y1 = y; y1 += alpha*x;
+y2 = y; vops_update, y2, alpha, x;
+write, format="Results: max(abs(dif)) = %g\n\n", max(abs(y2 - y1));

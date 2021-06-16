@@ -5,9 +5,10 @@
  *
  *-----------------------------------------------------------------------------
  *
- * Copyright (C) 2021: Éric Thiébaut <eric.thiebaut@univ-lyon1.fr>
+ * This file is part of VOPS for Yorick (https://github.com/emmt/yor-vops)
+ * released under the MIT "Expat" license.
  *
- * See LICENSE.md for details.
+ * Copyright (C) 2021: Éric Thiébaut <eric.thiebaut@univ-lyon1.fr>
  */
 
 #include <stdlib.h>
@@ -418,4 +419,82 @@ void Y_vops_scale(int argc)
     } else {
         vops_scale_dbl(dst, alpha, x.data, x.ntot);
     }
+}
+
+//-----------------------------------------------------------------------------
+// VOPS_SCALE
+
+#define ENCODE_(func, T)                        \
+    static void func(                           \
+        T*       y,                             \
+        T        alpha,                         \
+        const T* x,                             \
+        long     n)                             \
+    {                                           \
+        if (alpha == 1) {                       \
+            for (long i = 0; i < n; ++i) {      \
+                y[i] += x[i];                   \
+            }                                   \
+        } else if (alpha == -1) {               \
+            for (long i = 0; i < n; ++i) {      \
+                y[i] -= x[i];                   \
+            }                                   \
+        } else if (alpha != 0) {                \
+           for (long i = 0; i < n; ++i) {       \
+               y[i] += alpha*x[i];              \
+           }                                    \
+       }                                        \
+    }
+ENCODE_(vops_update_flt, float);
+ENCODE_(vops_update_dbl, double);
+#undef ENCODE_
+
+void Y_vops_update(int argc)
+{
+    if (argc != 3) {
+        y_error("usage: vops_update(y, alpha, x)");
+    }
+    int y_iarg = argc - 1;
+    int a_iarg = argc - 2;
+    int x_iarg = argc - 3;
+    long y_index = yget_ref(y_iarg);
+    array y;
+    get_array(y_iarg, &y);
+    if ((unsigned)y.type > Y_DOUBLE) {
+        y_error("argument `y` is not real-valued");
+    }
+    double alpha = ygets_d(a_iarg);
+    array x;
+    get_array(x_iarg, &x);
+    if ((unsigned)x.type > Y_DOUBLE) {
+        y_error("argument `x` is not real-valued");
+    }
+    if (!same_dims(x.dims, y.dims)) {
+        y_error("arguments `x` and `y` must have the same dimensions");
+    }
+    int T = promote_type(x.type, y.type);
+    if (T < 0) {
+        y_error("arguments have `x` and `y` incompatible types");
+    }
+    int single = (T == Y_FLOAT);
+    if (!single) {
+        T = Y_DOUBLE;
+    }
+    if (y.type != T) {
+        if (y_index < 0) {
+            y_error("argument `y` must not be an expression "
+                    "or already have correct element type");
+        }
+        coerce(y_iarg, &y, T);
+        yput_global(y_index, y_iarg);
+    }
+    if (x.type != T) {
+        coerce(x_iarg, &x, T);
+    }
+    if (single) {
+        vops_update_flt(y.data, alpha, x.data, x.ntot);
+    } else {
+        vops_update_dbl(y.data, alpha, x.data, x.ntot);
+    }
+    yarg_drop(argc - 1);
 }

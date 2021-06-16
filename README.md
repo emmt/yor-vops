@@ -6,6 +6,8 @@ optimized functions to perform basic linear algebra operations on arrays (as if
 they are vectors).  These functions can serve as fast building blocks for more
 advanced algorithms (e.g., the linear conjugate gradient method).
 
+Available functions and subroutines are:
+
 - `vops_norm1(x)` yields the L1-norm of the real-valued array `x`, defined as
   `sum(abs(x))`.
 
@@ -25,24 +27,29 @@ advanced algorithms (e.g., the linear conjugate gradient method).
   `x` scaled by the factor `alpha`.  If `alpha = 0`, the result is filled by
   zeros whatever the values in `x` (hence `x` may contain NaN's in that case).
 
-- `vops_scale, x, alpha;` scale the real-valued array `x` scaled by the factor
+- `vops_scale, x, alpha;` scales the real-valued array `x` scaled by the factor
   `alpha` in-place (i.e., overwriting the contents of `x`).
 
-The following results have been obtained for double precision floating points
-(`double`):
+- `vops_update, y, alpha, x;` computes `y += alpha*x` for arrays `x` and `y`
+  and scalar factor `alpha` efficiently, overwriting the contents `y`.
 
-| Description    | Code                |       Power |
-|:---------------|:--------------------|------------:|
-| L1-norm        | `sum(abs(x))`       |  1.7 Gflops |
-|                | `vops_norm1(x)`     | 20.5 Gflops |
-| L2-norm        | `sqrt(sum(x*x))`    |  1.9 Gflops |
-|                | `vops_norm2(x)`     | 24.8 Gflops |
-| Inf-norm       | `max(abs(x))`       |  2.7 Gflops |
-|                | `vops_norminf(x)`   | 20.5 Gflops |
-| Inner product  | `sum(x*y)`          |  1.9 Gflops |
-|                | `vops_inner(x,y)`   | 15.6 Gflops |
-| Triple product | `sum(w*x*y)`        |  2.1 Gflops |
-|                | `vops_inner(x,x,y)` | 16.0 Gflops |
+The following results have been obtained for double precision floating-point
+(`double`) variables:
+
+| Description    | Code                    |       Power |
+|:---------------|:------------------------|------------:|
+| L1-norm        | `sum(abs(x))`           |  1.7 Gflops |
+|                | `vops_norm1(x)`         | 20.5 Gflops |
+| L2-norm        | `sqrt(sum(x*x))`        |  1.9 Gflops |
+|                | `vops_norm2(x)`         | 24.8 Gflops |
+| Inf-norm       | `max(abs(x))`           |  2.7 Gflops |
+|                | `vops_norminf(x)`       | 20.5 Gflops |
+| Inner product  | `sum(x*y)`              |  1.9 Gflops |
+|                | `vops_inner(x,y)`       | 15.6 Gflops |
+| Triple product | `sum(w*x*y)`            |  2.1 Gflops |
+|                | `vops_inner(x,x,y)`     | 16.0 Gflops |
+| Update         | `y += alpha*x`          |  2.1 Gflops |
+|                | `vops_update,y,alpha,x` | 10.6 Gflops |
 
 
 Installation
