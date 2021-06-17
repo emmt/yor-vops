@@ -118,6 +118,8 @@ cfg_yexe=$(sed < "$cfg_tmpfile" -e '/^Y_EXE=/!d;s/^Y_EXE=//')
 echo >&2 "Yorick executable --------> $cfg_yorick"
 echo >&2 "Yorick home directory ----> $cfg_yhome"
 echo >&2 "Yorick site directory ----> $cfg_ysite"
+echo >&2 "Compiler -----------------> $cfg_cc"
+echo >&2 "Optimization flags -------> $cfg_copt"
 
 # Create the Makefile.
 sed <"${cfg_srcdir}"/Makefile.in >Makefile.tmp \
