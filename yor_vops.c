@@ -64,14 +64,13 @@ static inline array* get_array(int iarg, array* arr)
     return arr;
 }
 
-static inline array *coerce(int iarg, array* arr, int type)
+static inline void coerce(int iarg, array* arr, int type)
 {
     if (arr->type != type) {
         arr->data = ygeta_coerce(iarg, arr->data, arr->ntot, arr->dims,
                                  arr->type, type);
         arr->type = type;
     }
-    return arr;
 }
 
 static inline array* get_real_array(int iarg, array* arr, bool inplace)
@@ -99,7 +98,7 @@ static inline array* get_real_array(int iarg, array* arr, bool inplace)
     return arr;
 }
 
-static inline int same_dims(
+static inline bool same_dims(
     const long* a,
     const long* b)
 {
@@ -111,18 +110,18 @@ static inline int same_dims(
         b = z;
     }
     if (a == b) {
-        return 1;
+        return true;
     }
     long ndims;
     if ((ndims = a[0]) != b[0]) {
-        return 0;
+        return false;
     }
     for (long i = 1; i <= ndims; ++i) {
         if (a[i] != b[i]) {
-            return 0;
+            return false;
         }
     }
-    return 1;
+    return true;
 }
 
 /* DOCUMENT res = vmult(x, y [,z]);
@@ -329,7 +328,7 @@ void Y_vops_inner(int argc)
         T = promote_type(w.type, T);
     }
     if (T < 0) {
-        y_error("arguments have unsupported type");
+        y_error("arguments have unsupported types");
     }
     if (T != Y_FLOAT) {
         T = Y_DOUBLE;
@@ -422,7 +421,7 @@ void Y_vops_scale(int argc)
 }
 
 //-----------------------------------------------------------------------------
-// VOPS_SCALE
+// VOPS_UPDATE
 
 #define ENCODE_(func, T)                        \
     static void func(                           \
@@ -452,7 +451,7 @@ ENCODE_(vops_update_dbl, double);
 void Y_vops_update(int argc)
 {
     if (argc != 3) {
-        y_error("usage: vops_update(y, alpha, x)");
+        y_error("usage: vops_update, y, alpha, x;");
     }
     int y_iarg = argc - 1;
     int a_iarg = argc - 2;
@@ -474,24 +473,22 @@ void Y_vops_update(int argc)
     }
     int T = promote_type(x.type, y.type);
     if (T < 0) {
-        y_error("arguments have `x` and `y` incompatible types");
+        y_error("arguments `x` and `y` have unsupported types");
     }
-    bool single = (T == Y_FLOAT);
-    if (!single) {
+    if (T != Y_FLOAT) {
         T = Y_DOUBLE;
     }
     if (y.type != T) {
         if (y_index < 0) {
-            y_error("argument `y` must not be an expression "
-                    "or already have correct element type");
+            y_error("argument `y` must not be an expression or must have "
+                    "correct element type (`float` if `x` and `y` both "
+                    "have `float` elements, or `double` otherwise)");
         }
         coerce(y_iarg, &y, T);
         yput_global(y_index, y_iarg);
     }
-    if (x.type != T) {
-        coerce(x_iarg, &x, T);
-    }
-    if (single) {
+    coerce(x_iarg, &x, T);
+    if (T == Y_FLOAT) {
         vops_update_flt(y.data, alpha, x.data, x.ntot);
     } else {
         vops_update_dbl(y.data, alpha, x.data, x.ntot);
@@ -601,10 +598,9 @@ void Y_vops_combine(int argc)
     }
     int T = promote_type(x.type, y.type);
     if (T < 0) {
-        y_error("arguments have `x` and `y` incompatible types");
+        y_error("arguments `x` and `y` have unsupported types");
     }
-    bool single = (T == Y_FLOAT);
-    if (!single) {
+    if (T != Y_FLOAT) {
         T = Y_DOUBLE;
     }
 
@@ -625,7 +621,7 @@ void Y_vops_combine(int argc)
         if (dst == NULL) {
             if (d_index < 0) {
                 y_error("destination must have the correct size and type "
-                        "or be a simple variable");
+                        "or must be a simple variable");
             }
             if (d_type != Y_VOID) {
                 // Free memory that may be used by the destination variable.
@@ -639,7 +635,7 @@ void Y_vops_combine(int argc)
     }
     if (dst == NULL) {
         // Allocate output array.
-        if (single) {
+        if (T == Y_FLOAT) {
             dst = ypush_f(x.dims);
         } else {
             dst = ypush_d(x.dims);
@@ -650,13 +646,9 @@ void Y_vops_combine(int argc)
     }
 
     // Convert input arrays and call function.
-    if (x.type != T) {
-        coerce(x_iarg, &x, T);
-    }
-    if (y.type != T) {
-        coerce(y_iarg, &y, T);
-    }
-    if (single) {
+    coerce(x_iarg, &x, T);
+    coerce(y_iarg, &y, T);
+    if (T == Y_FLOAT) {
         vops_combine_flt(dst, alpha, x.data, beta, y.data, x.ntot);
     } else {
         vops_combine_dbl(dst, alpha, x.data, beta, y.data, x.ntot);
