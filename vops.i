@@ -50,7 +50,7 @@ local vops;
          vops_update, y, alpha, x;              -->  y += alpha*x
 
      computes `y += alpha*x` for arrays `x` and `y` and scalar factor `alpha`,
-     overwriting the contents `y`;
+     overwriting the contents of `y`;
 
          vops_combine(alpha, x, beta, y)        -->  alpha*x + beta*y
          vops_combine, dst, alpha, x, beta, y;  -->  dst = alpha*x + beta*y
@@ -125,14 +125,16 @@ extern vops_scale;
 
 extern vops_update;
 /* DOCUMENT vops_update, y, alpha, x;
+         or y = vops_update(y, alpha, x);
 
-      Compute `y += alpha*x` efficiently for arrays `x` and `y` and scalar
+      Compute `y += alpha*x` efficiently for arrays `x` and `y`, and scalar
       factor `alpha`, overwriting the contents of `y`.  Arrays `x` and `y` must
       have the same dimensions.  The result is always of floating-point type
-      (`float` if both `x` and `y` are of type `float`, `double` otherwise).
+      (`float` if `x` and `y` are both of type `float`, `double` otherwise).
       If `y` must be promoted to the result type, it must not be an expression
-      (i.e., `y` must be a simple variable for the caller).  The result `y` is
-      returned if called as a function.
+      (i.e., `y` must be a simple variable for the caller).
+
+      The updated result `y` is returned if called as a function.
 
    SEE ALSO: vops, vops_combine, vops_scale.
  */
@@ -141,10 +143,10 @@ extern vops_combine;
 /* DOCUMENT vops_combine, dst, alpha, x, beta, y;
          or dst = vops_combine(alpha, x, beta, y);
 
-      Compute `dst = alpha*x + beta*y` efficiently for arrays `x` and `y` and
+      Compute `dst = alpha*x + beta*y` efficiently for arrays `x` and `y`, and
       scalar factors `alpha` and `beta`.  Arrays `x` and `y` must have the same
       dimensions.  The result `dst` is always of floating-point type (`float`
-      if both `x` and `y` are of type `float`, `double` otherwise).
+      if `x` and `y` are both of type `float`, `double` otherwise).
 
       When called with 5 arguments, `dst` is overwritten by the result.  If the
       contents of `dst` has the correct dimensions and type, the memory
@@ -175,7 +177,7 @@ local vops_tic, vops_toc, vops_flops, vops_time;
      `vops_flops` is similar to `vops_toc` except that it computes the number
      of floating-point operations per second given `nops` the total number of
      floating-point operations and the consumed CPU time since the last call to
-     `vops_tic`..
+     `vops_tic`.
 
      External variable `vops_time` may be declared local before calling
      `vops_tic` to restrict the measurment of the elapsed time to the current

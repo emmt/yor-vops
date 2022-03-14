@@ -42,7 +42,7 @@ overwrites the contents of `x`;
     vops_update, y, alpha, x;              -->  y += alpha*x
 
 computes `y += alpha*x` for arrays `x` and `y` and scalar factor `alpha`,
-overwriting the contents `y`;
+overwriting the contents of `y`;
 
     vops_combine(alpha, x, beta, y)        -->  alpha*x + beta*y
     vops_combine, dst, alpha, x, beta, y;  -->  dst = alpha*x + beta*y
