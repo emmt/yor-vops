@@ -1,7 +1,7 @@
 Vectorized operations for Yorick
 ================================
 
-The `vops.i` plug-in for [Yorick](http://yorick.github.com/) provides a number of
+The `vops.i` plug-in for [Yorick](http://github.com/LLNL/yorick/) provides a number of
 optimized functions to perform basic linear algebra operations on arrays (as if
 they are vectors).  These functions can serve as fast building blocks for more
 advanced algorithms (e.g., the linear conjugate gradient method).
